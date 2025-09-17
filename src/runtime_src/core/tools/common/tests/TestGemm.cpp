@@ -41,11 +41,18 @@ TestGemm::run(std::shared_ptr<xrt_core::device> dev)
 
     //Calculate TOPS
     uint64_t npu_hclock = 0;
-    auto res_info = xrt_core::device_query_default<xrt_core::query::xrt_resource_raw>(dev, {});
-    for (auto &res : res_info) {
-      if (res.type != xrt_core::query::xrt_resource_raw::resource_type::npu_clk_max)
-        continue;
-      npu_hclock = res.data_uint64;
+    // auto res_info = xrt_core::device_query_default<xrt_core::query::xrt_resource_raw>(dev, {});
+    // for (auto &res : res_info) {
+    //   if (res.type != xrt_core::query::xrt_resource_raw::resource_type::npu_clk_max)
+    //     continue;
+    //   npu_hclock = res.data_uint64;
+    // }
+
+    auto raw = xrt_core::device_query<xrt_core::query::clock_freq_topology_raw>(dev);
+    auto clock_topology = reinterpret_cast<const clock_freq_topology*>(raw.data());
+    for (int c = 0; c < clock_topology->m_count; c++) {
+      if(boost::iequals(clock_topology->m_clock_freq[c].m_name, "H CLock"))
+        npu_hclock = clock_topology->m_clock_freq[c].m_freq_Mhz;
     }
 
     if (npu_hclock == 0) {
@@ -73,6 +80,7 @@ TestGemm::run(std::shared_ptr<xrt_core::device> dev)
     }
 
     if(XBU::getVerbose()) {
+      XBValidateUtils::logger(ptree, "Details", boost::str(boost::format("NPU h-clock: %.1f Mhz") % (npu_hclock)));
       XBValidateUtils::logger(ptree, "Details", boost::str(boost::format("Total Duration: %.1f ns") % (npu_hclck_period * (total_cycle_count/num_of_cores))));
       XBValidateUtils::logger(ptree, "Details", boost::str(boost::format("Average cycle count: %.1f") % (total_cycle_count/num_of_cores)));
     }
