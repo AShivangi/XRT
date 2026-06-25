@@ -53,6 +53,15 @@ XBUtilities::getVerbose()
   return m_bVerbose;
 }
 
+std::string
+XBUtilities::get_truncation_message(size_t shown, size_t total)
+{
+  if (shown >= total)
+    return {};
+  return boost::str(boost::format(
+    "  Showing %d of %d entries. Use --verbose for all rows.\n") % shown % total);
+}
+
 void
 XBUtilities::setElf(bool _bElf)
 {

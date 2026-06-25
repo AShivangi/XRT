@@ -5,10 +5,15 @@
 
 #include "core/common/info_telemetry.h"
 #include "tools/common/Table2D.h"
+#include "tools/common/XBUtilitiesCore.h"
 
 #include <vector>
 
 const boost::property_tree::ptree empty_ptree;
+
+// Number of entries shown in the default (non-verbose) CLI output. The full
+// data set is always available via --verbose or the machine-readable JSON.
+static constexpr size_t default_entry_limit = 16;
 
 void
 ReportTelemetry::getPropertyTreeInternal(const xrt_core::device* dev,
@@ -48,8 +53,12 @@ generate_rtos_dtlb_string(const boost::property_tree::ptree& pt)
   }
   Table2D rtos_dtlb_table(dtlb_headers);
 
+  const bool verbose = XBUtilities::getVerbose();
+  const size_t total = rtos_tasks.size();
   int index = 0;
   for (const auto& [name, rtos_task] : rtos_tasks) {
+    if (!verbose && static_cast<size_t>(index) >= default_entry_limit)
+      break;
     std::vector<std::string> dtlb_data = {
       std::to_string(index)
     };
@@ -65,6 +74,7 @@ generate_rtos_dtlb_string(const boost::property_tree::ptree& pt)
 
   ss << "  RTOS DTLBs\n";
   ss << rtos_dtlb_table.toString("  ") << "\n";
+  ss << XBUtilities::get_truncation_message(static_cast<size_t>(index), total);
 
   return ss.str();
 }
@@ -88,8 +98,12 @@ generate_rtos_string(const boost::property_tree::ptree& pt)
   };
   Table2D rtos_table(rtos_headers);
 
+  const bool verbose = XBUtilities::getVerbose();
+  const size_t total = rtos_tasks.size();
   int index = 0;
   for (const auto& [name, rtos_task] : rtos_tasks) {
+    if (!verbose && static_cast<size_t>(index) >= default_entry_limit)
+      break;
     const std::vector<std::string> rtos_data = {
       std::to_string(index),
       std::to_string(rtos_task.get<uint64_t>("started_count")),
@@ -104,6 +118,7 @@ generate_rtos_string(const boost::property_tree::ptree& pt)
   }
 
   ss << rtos_table.toString("  ") << "\n";
+  ss << XBUtilities::get_truncation_message(static_cast<size_t>(index), total);
 
   return ss.str();
 }

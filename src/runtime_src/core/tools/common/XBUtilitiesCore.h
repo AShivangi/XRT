@@ -37,6 +37,17 @@ namespace XBUtilities {
   void setVerbose(bool _bVerbose);
   bool getVerbose();
 
+  /**
+   * Build a footer note for CLI reports that truncate their entry list.
+   *
+   * @param shown number of entries actually displayed
+   * @param total total number of entries available
+   * Return: a note pointing the user to --verbose, or an empty string when
+   *         nothing was truncated (shown >= total)
+   */
+  std::string
+  get_truncation_message(size_t shown, size_t total);
+
   void setElf(bool _bElf);
   bool getElf();
 

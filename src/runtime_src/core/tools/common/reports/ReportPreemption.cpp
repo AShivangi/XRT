@@ -6,11 +6,16 @@
 #include "ReportPreemption.h"
 #include "core/common/info_telemetry.h"
 #include "tools/common/Table2D.h"
+#include "tools/common/XBUtilitiesCore.h"
 
 // 3rd Party Library - Include Files
 #include <vector>
 
 using bpt = boost::property_tree::ptree;
+
+// Number of entries shown in the default (non-verbose) CLI output. The full
+// data set is always available via --verbose or the machine-readable JSON.
+static constexpr size_t default_entry_limit = 16;
 
 void
 ReportPreemption::getPropertyTreeInternal(const xrt_core::device* dev,
@@ -42,7 +47,12 @@ generate_preemption_string(const bpt& pt)
   };
   Table2D preemption_table(preempt_headers);
 
+  const bool verbose = XBUtilities::getVerbose();
+  const size_t total = pt.size();
+  size_t shown = 0;
   for (const auto& [name, user_task] : pt) {
+    if (!verbose && shown >= default_entry_limit)
+      break;
     const std::vector<std::string> rtos_data = {
       user_task.get<std::string>("fw_tid"),
       user_task.get<std::string>("ctx_index"),
@@ -50,9 +60,11 @@ generate_preemption_string(const bpt& pt)
       user_task.get<std::string>("frame_events"),
     };
     preemption_table.addEntry(rtos_data);
+    shown++;
   }
 
   ss << preemption_table.toString("  ") << "\n";
+  ss << XBUtilities::get_truncation_message(shown, total);
 
   return ss.str();
 }
